@@ -1,44 +1,65 @@
+import java.util.ArrayList;
+
 public class Board {
     private static int size;
     private Cell[][] cells;
 
-    public Board(int size){
+    public Board(int size) {
         Board.size = size;
         cells = new Cell[size][size];
-        for(int y = 0; y < size; y++)
-            for(int x = 0; x < size ; x++) {
-                cells[x][y] = new Cell(new Position(x,y));
+
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                cells[x][y] = new Cell(new Position(x, y));
             }
+        }
     }
-    public void printBoard(){
-        for(int y = 0 ; y < size ; y++) {
-            for(int x = 0 ; x < size  ; x++)
+
+    public void printBoard() {
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
                 System.out.print(cells[x][y]);
+            }
             System.out.println();
         }
     }
 
     public void addObjInCell(GameObject object) {
-        cells[object.pos.x][object.pos.y].setGameObject(object);
-    }
-    public void removeObjFromCell(Position p){
-        cells[p.x][p.y].setGameObject(null);
-    }
-    public void addEntInCell(Entity ent) {
-        cells[ent.pos.x][ent.pos.y].setEntity(ent);
-    }
-    public void removeEntFromCell(Position p){
-        cells[p.x][p.y].setEntity(null);
+        if (isInside(object.pos.x, object.pos.y)) {
+            cells[object.pos.x][object.pos.y].setGameObject(object);
+        }
     }
 
-    public void addWalls(boolean column ,int vector, int start ,int end ){
-        if(column) {
+    public void removeObjFromCell(Position p) {
+        if (isInside(p.x, p.y)) {
+            cells[p.x][p.y].setGameObject(null);
+        }
+    }
+
+    public void addEntInCell(Entity ent) {
+        if (isInside(ent.pos.x, ent.pos.y)) {
+            cells[ent.pos.x][ent.pos.y].setEntity(ent);
+        }
+    }
+
+    public void removeEntFromCell(Position p) {
+        if (isInside(p.x, p.y)) {
+            cells[p.x][p.y].setEntity(null);
+        }
+    }
+
+    public void addWalls(boolean column, int vector, int start, int end) {
+        if (column) {
             for (int i = start; i <= end; i++) {
-                cells[vector][i].setGameObject(new Obstacle(new Position(vector , i)));
+                if (isInside(vector, i)) {
+                    cells[vector][i].setGameObject(new Obstacle(new Position(vector, i)));
+                }
             }
-        }else{
-            for(int i = start ; i<=end ; i++) {
-                    cells[i][vector].setGameObject(new Obstacle(new Position(i , vector)));
+        } else {
+            for (int i = start; i <= end; i++) {
+                if (isInside(i, vector)) {
+                    cells[i][vector].setGameObject(new Obstacle(new Position(i, vector)));
+                }
             }
         }
     }
@@ -47,14 +68,82 @@ public class Board {
         return cells[p.x][p.y];
     }
 
-    public static int getSize() { //for the player movement
+    public static int getSize() {
         return size;
     }
-    public boolean isEmptyCell(int x , int y){
-        return cells[x][y].isEmpty();
+
+    public boolean isInside(int x, int y) {
+        return x >= 0 && x < size && y >= 0 && y < size;
     }
-    public boolean isWalkableCell(int x, int y){
-        Position p = new Position(x , y);
-        return getCells(p).isWalkable();
+
+    public boolean isEmptyCell(int x, int y) {
+        return isInside(x, y) && cells[x][y].isEmpty();
+    }
+
+    public boolean isWalkableCell(int x, int y) {
+        return isInside(x, y) && cells[x][y].isWalkable();
+    }
+
+    public Position getNextPosition(Position p, char direction) {
+        int newX = p.x;
+        int newY = p.y;
+
+        switch (Character.toUpperCase(direction)) {
+            case 'W':
+                newY--;
+                break;
+            case 'A':
+                newX--;
+                break;
+            case 'S':
+                newY++;
+                break;
+            case 'D':
+                newX++;
+                break;
+        }
+
+        return new Position(newX, newY);
+    }
+
+    public boolean canMove(Position p, char direction) {
+        Position next = getNextPosition(p, direction);
+        return isWalkableCell(next.x, next.y);
+    }
+
+    public ArrayList<Character> getLegalMoves(Entity entity) {
+        ArrayList<Character> legalMoves = new ArrayList<>();
+
+        if (canMove(entity.getPos(), 'W')) {
+            legalMoves.add('W');
+        }
+
+        if (canMove(entity.getPos(), 'A')) {
+            legalMoves.add('A');
+        }
+
+        if (canMove(entity.getPos(), 'S')) {
+            legalMoves.add('S');
+        }
+
+        if (canMove(entity.getPos(), 'D')) {
+            legalMoves.add('D');
+        }
+
+        return legalMoves;
+    }
+
+    public ArrayList<Position> getCoinPositions() {
+        ArrayList<Position> coinPositions = new ArrayList<>();
+
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                if (cells[x][y].hasCoin()) {
+                    coinPositions.add(new Position(x, y));
+                }
+            }
+        }
+
+        return coinPositions;
     }
 }
